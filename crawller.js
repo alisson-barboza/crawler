@@ -1,30 +1,18 @@
+const fs = require('fs')
 const request = require('request')
 const cheerio = require('cheerio')
-var getImageUrls = require('get-image-urls')
 
-const url = 'http://www.unicap.br/home/'
+const urlG = 'http://www.unicap.br/home/'
 
-console.log(getImageUrls(url, (err, images)=>{
-    if(!err){
-        console.log(images)
-    }
-
-}))
-/*
-request({url: url},(error, response)=>{
-    if(error){
-        console.log('Error' + error)
-    }
-    else{
+request({url: urlG},(error, response)=>{
+    if(!error){    
         var $ = cheerio.load(response.body)
-        
-        //console.log('Img TAG: ' + $('img'))
-        $('img').each(()=>{
-            console.log($(this).find('src').prop('src'))
+    
+        $('img').map((i, e)=>{            
+            //Use this in case of the src doenst contains all the url path
+            //var src = urlG.concat($(e).attr('src'))
+            var src = $(e).attr('src')
+            console.log(src)                        
         })
-            
-            
-        
     }
-
-})*/
+})
