@@ -1,74 +1,61 @@
-const fs = require('fs')
-const request = require('request')
-const cheerio = require('cheerio')
 const { Worker } =  require('worker_threads')
-const eventEmitter = require('events');
+require('events').defaultMaxListeners = 10000
 
-const urls = ['https://blog.rico.com.vc/melhores-fundos-imobiliarios', 'https://www.google.com.br/',
-'https://lushpin.com/', 'https://www.youtube.com/']
+const urls = [/*'https://blog.rico.com.vc/melhores-fundos-imobiliarios', 'https://www.google.com.br/',
+'https://lushpin.com/',*/ 'https://www.youtube.com/']
 
 const links = []
-const readerList = []
-const downloaderList = []
-
-for(let i = 0; i < 5; i++){     
-    let workerObject = {
-        worker: createReader(),
-        inUse: false
+const workerList = []
+createDownloaders()
+function createDownloaders(){
+    for(let i=0; i< 10; i++){
+        let downloader = {
+            worker: createDownloader(),
+            inUse: false
+        }
+        workerList.push(downloader)
     }
-    readerList.push(workerObject)
 }
 
 //getting the img src path to download
-urls.forEach(url => {
-    setReader(getFreeReader(), url)
-})
-
-// Creating downloaders
-for(let i = 0 ; i < 3; i++){
-    let downloader = {
-        worker: createDownloader(),
-        inUse: false
-    }
-    downloaderList.push(downloader)
+start(urls)
+async function start(urls){
+    for(let i=0 ; i< urls.length ; i++){
+        setReader(await getFreeReader(), urls[i])
+    }    
 }
 
-function setReader(reader, msg){   
-    console.log('Reader sending')
-    reader.worker.postMessage(msg)
-    reader.worker.on('message', async msg =>{
-        pushIntoLinks(msg)
-    })
-    reader.worker.on('exit', code =>{
-        reader.inUse = false
-    })
+
+function setReader(reader, msg){
+    console.log('Sent: ' + msg)
+    reader.postMessage(msg)
+    reader.on('message', async msg =>{
+        links.push(msg)        
+        //TODO remind myself to do and observable to look for changes in the array and start the downloading process
+    })    
 }
+
 
 async function setDownloader(downloader, link){  
     console.log('Message sent')  
     downloader.worker.postMessage(link)
-    downloader.worker.on('exit', async code =>{
-        console.log('exited')
+    downloader.worker.on('exit', ()=>{
         downloader.inUse = false
     })
-    
 }
 
-function getFreeDownloader(){
-    for(let i = 0; i < downloaderList.length ; i++){
-        if(downloaderList[i].inUse === false){
-            downloaderList[i].inUse = true
-            return downloaderList[i]
-        }
-    }
-}
 
 async function startDownloadingProcess(){
-    while(links.length !== 0){        
+    for (const i of links) {
         var downloader = await getFreeDownloader()
-        if(downloader){
+        if(downloader !== null){
             var link = await gimmeOneLink()
-            setDownloader(downloader, link)        
+            if(link){
+                setDownloader(downloader, link)
+                startDownloadingProcess()
+            }
+        }else{
+            checkStartDownloading(5000)
         }        
     }
 }
@@ -77,8 +64,8 @@ async function startDownloadingProcess(){
 checkStartDownloading(4000)
 async function checkStartDownloading(time){
     console.log('Checking if can start, size: ' + links.length)
-    setTimeout(async ()=>{
-        if(links.length !== 0){
+    setTimeout(()=>{
+        if(links.length != 0){
             startDownloadingProcess()
         }else{
             checkStartDownloading(time/2)
@@ -87,12 +74,21 @@ async function checkStartDownloading(time){
 }
 
 function getFreeReader(){
-    for(let i = 0; i < readerList.length ; i++){
-        if(readerList[i].inUse === false){
-            readerList[i].inUse = true
-            return readerList[i]
+    return createReader()
+}
+
+
+function getFreeDownloader(){
+    //return createDownloader()
+    
+    for(i = 0; i < workerList.length; i++ ){
+        if(workerList[i].inUse === false){
+            workerList[i].inUse = true
+            return workerList[i]
         }
     }
+    return null
+    
 }
 
 function createReader(){
@@ -108,9 +104,5 @@ function gimmeOneLink(){
         return links.pop()
     }else{
         return null
-    }    
-}
-
-function pushIntoLinks(link){
-    links.push(link)
+    }
 }

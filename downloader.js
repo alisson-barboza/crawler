@@ -1,6 +1,3 @@
-const fs = require('fs')
-const request = require('request')
-const cheerio = require('cheerio')
 const { parentPort } = require('worker_threads');
 
 parentPort.on('message', (url) =>{
@@ -20,6 +17,6 @@ parentPort.on('message', (url) =>{
     })*/  
 })
 
-function exitFunc(){
+function exitFunction(){
     process.exit(1)
 }
