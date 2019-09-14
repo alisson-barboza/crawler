@@ -1,71 +1,36 @@
 const { Worker } =  require('worker_threads')
+const buffer = require('./buffer.js')
 require('events').defaultMaxListeners = 10000
 
-const urls = [/*'https://blog.rico.com.vc/melhores-fundos-imobiliarios', 'https://www.google.com.br/',
-'https://lushpin.com/',*/ 'https://www.youtube.com/']
+var readerQtd = 0
+var downloaderQtd = 0
 
-const links = []
-const workerList = []
-createDownloaders()
-function createDownloaders(){
-    for(let i=0; i< 10; i++){
-        let downloader = {
-            worker: createDownloader(),
-            inUse: false
-        }
-        workerList.push(downloader)
-    }
-}
+const urls = ['https://blog.rico.com.vc/melhores-fundos-imobiliarios', 'https://www.google.com.br/',
+'https://lushpin.com/', 'https://www.youtube.com/']
 
-//getting the img src path to download
+//Starting the whole thing
 start(urls)
 async function start(urls){
-    for(let i=0 ; i< urls.length ; i++){
-        setReader(await getFreeReader(), urls[i])
+    for (const url of urls) {
+        const reader = await getFreeReader()
+        setReader(reader, url)
     }    
 }
-
-
+//Sending a msg with the URL to Reader thread
 function setReader(reader, msg){
-    console.log('Sent: ' + msg)
     reader.postMessage(msg)
     reader.on('message', async msg =>{
-        links.push(msg)        
-        //TODO remind myself to do and observable to look for changes in the array and start the downloading process
-    })    
-}
-
-
-async function setDownloader(downloader, link){  
-    console.log('Message sent')  
-    downloader.worker.postMessage(link)
-    downloader.worker.on('exit', ()=>{
-        downloader.inUse = false
+        await buffer.addLink(msg)       
+        startDownloadingProcess()        
     })
 }
 
-
-async function startDownloadingProcess(){
-    for (const i of links) {
-        var downloader = await getFreeDownloader()
-        if(downloader !== null){
-            var link = await gimmeOneLink()
-            if(link){
-                setDownloader(downloader, link)
-                startDownloadingProcess()
-            }
-        }else{
-            checkStartDownloading(5000)
-        }        
-    }
-}
-
 //Function to check if the size of links buffer isnt equal to zero and then, start the downloading process
-checkStartDownloading(4000)
+//checkStartDownloading(4000)
 async function checkStartDownloading(time){
-    console.log('Checking if can start, size: ' + links.length)
+    console.log('Checking if can start, size: ' + buffer.getSize())
     setTimeout(()=>{
-        if(links.length != 0){
+        if(buffer.getSize() != 0){
             startDownloadingProcess()
         }else{
             checkStartDownloading(time/2)
@@ -73,14 +38,25 @@ async function checkStartDownloading(time){
     },time)
 }
 
-function getFreeReader(){
-    return createReader()
+async function startDownloadingProcess(){
+    console.log('Starting downloading process')
+    var downloader = await getFreeDownloader()
+    if(downloader !== null){
+        var link = await buffer.getLink()
+        if(link !== null){
+            setDownloader(downloader, link)            
+        }
+    }                
 }
 
+async function setDownloader(downloader, link){  
+    console.log('Message sent')  
+    downloader.postMessage(link)
+}
 
-function getFreeDownloader(){
-    //return createDownloader()
-    
+async function getFreeDownloader(){
+    return createDownloader()
+    /*
     for(i = 0; i < workerList.length; i++ ){
         if(workerList[i].inUse === false){
             workerList[i].inUse = true
@@ -88,21 +64,17 @@ function getFreeDownloader(){
         }
     }
     return null
-    
-}
-
-function createReader(){
-    return new Worker('./reader.js')
+    */
 }
 
 function createDownloader(){
     return new Worker('./downloader.js')
 }
 
-function gimmeOneLink(){
-    if(links.length != 0){
-        return links.pop()
-    }else{
-        return null
-    }
+async function getFreeReader(){
+    return createReader()
+}
+
+function createReader(){
+    return new Worker('./reader.js')
 }
