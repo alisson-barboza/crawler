@@ -1,15 +1,29 @@
+const fs = require('fs')
 const { Worker } =  require('worker_threads')
 const buffer = require('./buffer.js')
+const readline = require('readline')
 require('events').defaultMaxListeners = 10000
 
 var readerQtd = 0
 var downloaderQtd = 0
 
-const urls = ['https://blog.rico.com.vc/melhores-fundos-imobiliarios', 'https://www.google.com.br/',
-'https://lushpin.com/', 'https://www.youtube.com/']
+const urls = []
 
-//Starting the whole thing
-start(urls)
+var rd = readline.createInterface({
+    input: fs.createReadStream('./tj.txt'),
+    output: process.stdout,
+    console: false
+});
+
+
+rd.on('line', function(line) {
+    urls.push(line)
+}).on('close', function(line) {
+    start(urls)
+});
+
+
+
 async function start(urls){
     for (const url of urls) {
         const reader = await getFreeReader()
@@ -19,27 +33,29 @@ async function start(urls){
 //Sending a msg with the URL to Reader thread
 function setReader(reader, msg){
     reader.postMessage(msg)
+    readerQtd--
     reader.on('message', async msg =>{
         await buffer.addLink(msg)       
-        startDownloadingProcess()        
+        startDownloadingProcess()
     })
 }
 
-//Function to check if the size of links buffer isnt equal to zero and then, start the downloading process
-//checkStartDownloading(4000)
-async function checkStartDownloading(time){
-    console.log('Checking if can start, size: ' + buffer.getSize())
+//Function to check if the program can end
+checkIfProgramEnded(4000)
+async function checkIfProgramEnded(time){
     setTimeout(()=>{
-        if(buffer.getSize() != 0){
-            startDownloadingProcess()
+        if(readerQtd === 0 && downloaderQtd === 0){
+            setTimeout(()=>{
+                process.exit()
+            }, 4000)
+            
         }else{
-            checkStartDownloading(time/2)
+            checkIfProgramEnded(time)
         }
     },time)
 }
 
 async function startDownloadingProcess(){
-    console.log('Starting downloading process')
     var downloader = await getFreeDownloader()
     if(downloader !== null){
         var link = await buffer.getLink()
@@ -50,21 +66,15 @@ async function startDownloadingProcess(){
 }
 
 async function setDownloader(downloader, link){  
-    console.log('Message sent')  
     downloader.postMessage(link)
+    downloader.on('message', (msg)=>{
+        downloaderQtd--
+    })
 }
 
 async function getFreeDownloader(){
-    return createDownloader()
-    /*
-    for(i = 0; i < workerList.length; i++ ){
-        if(workerList[i].inUse === false){
-            workerList[i].inUse = true
-            return workerList[i]
-        }
-    }
-    return null
-    */
+    downloaderQtd++
+    return createDownloader()    
 }
 
 function createDownloader(){
@@ -72,6 +82,7 @@ function createDownloader(){
 }
 
 async function getFreeReader(){
+    readerQtd++
     return createReader()
 }
 
