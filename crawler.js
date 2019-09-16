@@ -6,21 +6,21 @@ require('events').defaultMaxListeners = 10000
 
 var readerQtd = 0
 var downloaderQtd = 0
-
 const urls = []
 
 var rd = readline.createInterface({
     input: fs.createReadStream('./tj.txt'),
     output: process.stdout,
     console: false
-});
+})
 
 
 rd.on('line', function(line) {
     urls.push(line)
 }).on('close', function(line) {
     start(urls)
-});
+    checkIfProgramEnded(4000)
+})
 
 
 
@@ -41,10 +41,10 @@ function setReader(reader, msg){
 }
 
 //Function to check if the program can end
-checkIfProgramEnded(4000)
 async function checkIfProgramEnded(time){
     setTimeout(()=>{
         if(readerQtd === 0 && downloaderQtd === 0){
+            console.log('Ending...')
             setTimeout(()=>{
                 process.exit()
             }, 4000)
@@ -60,6 +60,7 @@ async function startDownloadingProcess(){
     if(downloader !== null){
         var link = await buffer.getLink()
         if(link !== null){
+            console.log('Downloading img from: ' + link)
             setDownloader(downloader, link)            
         }
     }                
@@ -73,6 +74,7 @@ async function setDownloader(downloader, link){
 }
 
 async function getFreeDownloader(){
+    console.log('Creating Downloader thread number: ' + downloaderQtd)
     downloaderQtd++
     return createDownloader()    
 }
@@ -82,6 +84,7 @@ function createDownloader(){
 }
 
 async function getFreeReader(){
+    console.log('Creating Reader thread')
     readerQtd++
     return createReader()
 }
