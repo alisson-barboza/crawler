@@ -6,6 +6,7 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.3",
     "image-crawler": "^1.0.1",
+    "name-generator": "^0.1.1",
     "request": "^2.88.0"
   },
   "devDependencies": {},

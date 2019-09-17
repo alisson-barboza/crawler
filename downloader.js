@@ -1,25 +1,11 @@
-const fs = require('fs')
 const request = require('request')
-const cheerio = require('cheerio')
-const { parentPort } = require('worker_threads');
+const fs = require('fs')
+const { parentPort } = require('worker_threads')
 
-parentPort.on('message', (url) =>{
-    console.log('received')
-    exitFunction(console.log(url))
-    
-    /*
-    request({url: msg},async function (error, response){
-        //In case if you'r asking yourself if this is really async, it is but will depends on the time that we get the answer    
-        if(!error){
-            var $ = cheerio.load(response.body)                    
-            exitFunc($('img').map(async (i, e)=>{                                            
-                var src = $(e).attr('src')
-                parentPort.postMessage(src)
-            }))
-        }
-    })*/  
+
+
+parentPort.on('message', function(url){
+    request(url).pipe(fs.createWriteStream(Math.random().toString(36).substring(7))).on('close', ()=> {
+        parentPort.postMessage('message', 'I"m done')
+    })
 })
-
-function exitFunc(){
-    process.exit(1)
-}
