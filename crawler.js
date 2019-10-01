@@ -31,7 +31,7 @@ async function start(urls) {
     }
 }
 
-//Sending a msg with the URL to Reader thread
+//Enviando mensagem com a UTL para o renderer. Sending a msg with the URL to Reader thread
 function setReader(reader, msg) {
     reader.postMessage(msg);
     readerQtd--;
@@ -41,7 +41,7 @@ function setReader(reader, msg) {
     });
 }
 
-//Function to check if the program can end
+//Função para checar se o programa pode terminar. Function to check if the program can end
 async function checkIfProgramEnded(time) {
     setTimeout(() => {
         if (readerQtd === 0 && downloaderQtd === 0) {
@@ -56,6 +56,7 @@ async function checkIfProgramEnded(time) {
     }, time);
 }
 
+//Função para o inicio do processo de download. Function to start the downloading process
 async function startDownloadingProcess() {
     var downloader = await getFreeDownloader()
     if (downloader !== null) {
