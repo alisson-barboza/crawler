@@ -11,8 +11,10 @@ parentPort.on('message', (msg)=>{
             $('img').map((i, e)=>{                                            
                 var src = $(e).attr('src')                
                 if(src.startsWith('http')){
+                    console.log('post', src)
                     parentPort.postMessage(src)
                 }else{
+                    console.log('post', msg+imgLink)
                     var http = msg
                     var imgLink = src
                     parentPort.postMessage(msg+imgLink)

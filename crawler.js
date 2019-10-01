@@ -30,6 +30,7 @@ async function start(urls){
         setReader(reader, url)
     }    
 }
+
 //Sending a msg with the URL to Reader thread
 function setReader(reader, msg){
     reader.postMessage(msg)
