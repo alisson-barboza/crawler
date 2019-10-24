@@ -7,13 +7,13 @@ require('events').defaultMaxListeners = 10000
 var readerQtd = 0
 var downloaderQtd = 0
 const urls = []
+const filename = './tj.txt'
 
 var reader = readline.createInterface({
-    input: fs.createReadStream('./tj.txt'),
+    input: fs.createReadStream(filename),
     output: process.stdout,
     console: false
 });
-
 
 reader.on('line', function (line) {
     urls.push(line)
@@ -22,8 +22,6 @@ reader.on('line', function (line) {
     checkIfProgramEnded(4000)
 });
 
-
-
 async function start(urls) {
     for (const url of urls) {
         const reader = await getFreeReader();
@@ -31,7 +29,6 @@ async function start(urls) {
     }
 }
 
-//Sending a msg with the URL to Reader thread
 function setReader(reader, msg) {
     reader.postMessage(msg);
     readerQtd--;
@@ -41,7 +38,6 @@ function setReader(reader, msg) {
     });
 }
 
-//Function to check if the program can end
 async function checkIfProgramEnded(time) {
     setTimeout(() => {
         if (readerQtd === 0 && downloaderQtd === 0) {
@@ -81,15 +77,17 @@ async function getFreeDownloader() {
 }
 
 function createDownloader() {
+    // carai alisson, isso é muito seboso véi pqp kkk
     return new Worker('./downloader.js');
 }
 
 async function getFreeReader() {
     console.log('Creating Reader thread');
-    readerQtd++;
+    readerQtd ++;
     return createReader();
 }
 
 function createReader() {
+    // carai alisson, isso é muito seboso véi pqp kkk
     return new Worker('./reader.js');
 }

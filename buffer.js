@@ -3,10 +3,9 @@ var links = []
 const addLink = async (link) => {
     if(link !== null && link !== undefined){
         links.push(link);
-        return 1;
+        return true;
     }
-    return 0;
-    
+    return false;
 }
 
 const getLink = async () => {
